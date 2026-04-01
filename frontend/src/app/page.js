@@ -223,7 +223,7 @@ export default function Home() {
       <div className="w-1/4 bg-slate-900 text-gray-300 p-4 border-r border-slate-700 shadow-xl">
         <h2 className="font-bold mb-4">Users</h2>
 
-        {[...users]
+        {[...Object.keys(userMap)]
           .filter((user) => user !== socketId)
           .sort((a, b) => {
             const lastA = messages[a]?.[messages[a].length - 1]?.timestamp || 0;
