@@ -139,7 +139,7 @@ app.get("/messages/:user1/:user2", async (req, res) => {
 io.on("connection", (socket) => {
 
   // GET persistent user ID from client (if any)
-  const userId = socket.handshake.auth.userId || socket.id;
+  const userId = String(socket.handshake.auth.userId || socket.id);
 
   socket.userId = userId; // Override socket.userId with persistent userId
 
@@ -180,8 +180,14 @@ io.on("connection", (socket) => {
       console.error("DB Save Error:", err);
     }
 
+    // Debug
+    console.log("Users map:", users);
+    console.log("Sending message to:", String(data.to));
+
     // Send ONLY to selected user
-    const receiverSockets = users[data.to];
+    const receiverSockets = users[String(data.to)];
+
+    console.log("Receiver sockets:", receiverSockets);
 
     if (receiverSockets) {
         receiverSockets.forEach((id) => {
@@ -202,7 +208,7 @@ io.on("connection", (socket) => {
       );
 
       // Notify the original sender that their messages were seen
-      const senderSocketId = users[senderId];
+      const senderSocketId = users[String(senderId)];
       if (senderSocketId) {
         senderSocketId.forEach((id) => {
             io.to(id).emit("messages_seen_update", { seenBy: receiverId });
@@ -217,7 +223,7 @@ io.on("connection", (socket) => {
   socket.on("typing", (data) => {
     if (!data.to || data.to === userId) return;
     
-    const receiverSocketId = users[data.to];
+    const receiverSocketId = users[String(data.to)];
 
     if (receiverSocketId) {
         receiverSocketId.forEach((id) => {
