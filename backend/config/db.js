@@ -1,4 +1,4 @@
-import mangoose from "mongoose";
+const mongoose = require("mongoose");
 
 export const connectDB = async () => {
   try {
