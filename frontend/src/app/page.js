@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { io } from "socket.io-client";
 
@@ -14,6 +14,7 @@ export default function Home() {
   const [typingUser, setTypingUser] = useState(null);
   const [unread, setUnread] = useState({});
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   const router = useRouter();
   const socketRef = useRef(null);
@@ -28,6 +29,18 @@ export default function Home() {
     if (!user) {
       router.push("/auth") ;
     }
+  }, []);
+
+  useEffect(() => {
+    const checkscreen = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkscreen();
+
+    window.addEventListener("resize", checkscreen);
+
+    return () => window.removeEventListener("resize", checkscreen);
   }, []);
 
   useEffect(() => {
@@ -318,7 +331,7 @@ export default function Home() {
       )}
 
       {/* CHAT AREA */}
-      {(!showSidebar || window.innerWidth >= 768) && (
+      {(!showSidebar || !isMobile) && (
         <div className="w-full md:w-3/4 flex flex-col bg-slate-950 relative overflow-hidden">
 
           {/* HEADER */}

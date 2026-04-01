@@ -1,4 +1,5 @@
 // Import packages
+
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
@@ -11,17 +12,14 @@ const bcrypt = require("bcryptjs");
 
 let users = {};
 
+const { connectDB } = require("./config/db");
+
 // Initialize app
 const app = express();
 const server = http.createServer(app);
 
 // Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected");
-  })
-  .catch((err) => console.error("MongoDB error:", err));
+connectDB();
 
 // Setup Socket.io
 const io = new Server(server, {
