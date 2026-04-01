@@ -145,7 +145,11 @@ io.on("connection", (socket) => {
 
 
   // Prevent duplicate users
-  users[userId] = socket.id; // Map userId to socket.id
+  if (!users[userId]) {
+    users[userId] = []; // Map userId to socket.id
+  }
+
+  users[userId].push(socket.id);
 
   console.log("User connected:", userId);
 
@@ -177,10 +181,12 @@ io.on("connection", (socket) => {
     }
 
     // Send ONLY to selected user
-    const receiverSocketId = users[data.to];
+    const receiverSockets = users[data.to];
 
-    if (receiverSocketId) {
-        io.to(receiverSocketId).emit("receive_message", messageData);
+    if (receiverSockets) {
+        receiverSockets.forEach((id) => {
+            io.to(id).emit("receive_message", messageData);
+        });
     }
   });
 
@@ -198,7 +204,9 @@ io.on("connection", (socket) => {
       // Notify the original sender that their messages were seen
       const senderSocketId = users[senderId];
       if (senderSocketId) {
-        io.to(senderSocketId).emit("messages_seen_update", { seenBy: receiverId });
+        senderSocketId.forEach((id) => {
+            io.to(id).emit("messages_seen_update", { seenBy: receiverId });
+        });
       }
     } catch (err) {
       console.error("Error updating seen status:", err);
@@ -212,15 +220,25 @@ io.on("connection", (socket) => {
     const receiverSocketId = users[data.to];
 
     if (receiverSocketId) {
-        io.to(receiverSocketId).emit("typing", {
-          senderId: userId,
+        receiverSocketId.forEach((id) => {
+            io.to(id).emit("typing", {
+                senderId: userId,
+            });
         });
     }
   });
 
   // Handle disconnect
   socket.on("disconnect", () => {
-    delete users[socket.userId]; // Remove user from list
+    if (users[socket.userId]) {
+        users[socket.userId] = users[socket.userId].filter(
+            (id) => id !== socket.id
+        );
+
+        if (users[socket.userId].length === 0) {
+            delete users[socket.userId];
+        }
+    }
 
     console.log("User disconnected:", socket.userId);
 
