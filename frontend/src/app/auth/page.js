@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,7 +14,7 @@ export default function AuthPage() {
   const handleSubmit = async () => {
     const url = isLogin ? "login" : "signup";
 
-    const res = await fetch(`http://localhost:5000/${url}`, {
+    const res = await fetch(`https://zeno-chat-app.onrender.com/${url}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -25,7 +26,7 @@ export default function AuthPage() {
 
     if (data._id) {
       localStorage.setItem("user", JSON.stringify(data));
-      window.location.href = "/";
+      router.push("/");
     } else {
       alert(data.error);
     }

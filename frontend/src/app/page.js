@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { io } from "socket.io-client";
 
 export default function Home() {
@@ -13,6 +14,7 @@ export default function Home() {
   const [typingUser, setTypingUser] = useState(null);
   const [unread, setUnread] = useState({});
 
+  const router = useRouter();
   const socketRef = useRef(null);
   const socketIdRef = useRef("");
   const messageEndRef = useRef(null);
@@ -23,7 +25,7 @@ export default function Home() {
     const user = localStorage.getItem("user");
 
     if (!user) {
-      window.location.href = "/auth";
+      router.push("/auth") ;
     }
   }, []);
 
