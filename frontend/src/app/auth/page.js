@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
+  const router = useRouter(); // ✅ FIX 1
+
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false); // ✅ FIX 2
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -12,23 +16,37 @@ export default function AuthPage() {
   });
 
   const handleSubmit = async () => {
-    const url = isLogin ? "login" : "signup";
+    if (loading) return;
 
-    const res = await fetch(`https://zeno-chat-app.onrender.com/${url}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+    setLoading(true);
 
-    const data = await res.json();
+    try {
+      const url = isLogin ? "login" : "signup";
 
-    if (data._id) {
-      localStorage.setItem("user", JSON.stringify(data));
-      router.push("/");
-    } else {
-      alert(data.error);
+      const res = await fetch(`https://zeno-chat-app.onrender.com/${url}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+
+      // ✅ FIX 3: proper error handling
+      if (!res.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      if (data._id) {
+        localStorage.setItem("user", JSON.stringify(data));
+        router.push("/"); // ✅ FIX 4
+      }
+    } catch (err) {
+      console.error("Auth error:", err);
+      alert(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,9 +85,18 @@ export default function AuthPage() {
 
       <button
         onClick={handleSubmit}
-        className="bg-blue-500 text-white px-4 py-2"
+        disabled={loading}
+        className={`px-4 py-2 text-white rounded ${
+          loading
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-500 hover:bg-blue-600"
+        }`}
       >
-        {isLogin ? "Login" : "Signup"}
+        {loading
+          ? "Please wait..."
+          : isLogin
+          ? "Login"
+          : "Signup"}
       </button>
 
       <p
