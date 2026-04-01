@@ -29,7 +29,7 @@ export default function Home() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const res = await fetch("http://localhost:5000/users");
+      const res = await fetch("https://zeno-chat-app.onrender.com//users");
       const data = await res.json();
 
       const map = {};
@@ -53,7 +53,7 @@ export default function Home() {
     const userId = user._id;
 
     // Step 2: Connect socket with REAL user ID (not socket.id)
-    socketRef.current = io("http://localhost:5000", {
+    socketRef.current = io("https://zeno-chat-app.onrender.com/", {
       auth: { userId},
     });
 
@@ -155,7 +155,7 @@ export default function Home() {
     const fetchMessages = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/messages/${socketId}/${selectedUser}`
+          `https://zeno-chat-app.onrender.com//messages/${socketId}/${selectedUser}`
         );
 
         const data = await res.json();
