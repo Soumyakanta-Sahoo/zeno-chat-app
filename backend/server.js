@@ -15,6 +15,7 @@ let users = {};
 const { connectDB } = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const messageRoutes = require("./routes/messageRoutes");
+const { setupSocket } = require("./socket/socketHandler");
 
 // Initialize app
 const app = express();
@@ -110,122 +111,7 @@ app.post("/login", async (req, res) => {
 
 
 // Socket connection
-io.on("connection", (socket) => {
-
-  // GET persistent user ID from client (if any)
-  const userId = String(socket.handshake.auth.userId || socket.id);
-
-  socket.userId = userId; // Override socket.userId with persistent userId
-
-
-  // Prevent duplicate users
-  if (!users[userId]) {
-    users[userId] = []; // Map userId to socket.id
-  }
-
-  users[userId].push(socket.id);
-
-  console.log("User connected:", userId);
-
-  // Broadcast updated user list
-  io.emit("online_users", Object.keys(users));
-
-  // Handle message sending
-  socket.on("send_message", async (data) => {
-    if (!data.to || data.to === socket.userId) {
-      console.log("Invalid receiver (self or empty):", data.to); // Ignore messages sent to self or with empty receiver
-      return;
-    }
-
-    const messageData = {
-      text: data.text,
-      senderId: userId,
-      receiverId: data.to,
-      timestamp: new Date().toISOString(),
-      seen: false,
-    };
-
-    console.log("Message received:", messageData);
-
-    // Save message to MongoDB
-    try {
-      await Message.create(messageData);
-    } catch (err) {
-      console.error("DB Save Error:", err);
-    }
-
-    // Debug
-    console.log("Users map:", users);
-    console.log("Sending message to:", String(data.to));
-
-    // Send ONLY to selected user
-    const receiverSockets = users[String(data.to)];
-
-    console.log("Receiver sockets:", receiverSockets);
-
-    if (receiverSockets) {
-        receiverSockets.forEach((id) => {
-            io.to(id).emit("receive_message", messageData);
-        });
-    }
-  });
-
-  // Handle Read Receipts
-  socket.on("mark_as_seen", async (data) => {
-    const { senderId, receiverId } = data;
-
-    try {
-      // Update all unread messages from this sender to this receiver
-      await Message.updateMany(
-        { senderId: senderId, receiverId: receiverId, seen: { $ne: true } },
-        { $set: { seen: true } }
-      );
-
-      // Notify the original sender that their messages were seen
-      const senderSocketId = users[String(senderId)];
-      if (senderSocketId) {
-        senderSocketId.forEach((id) => {
-            io.to(id).emit("messages_seen_update", { seenBy: receiverId });
-        });
-      }
-    } catch (err) {
-      console.error("Error updating seen status:", err);
-    }
-  });
-
-  // Handle typing event
-  socket.on("typing", (data) => {
-    if (!data.to || data.to === userId) return;
-    
-    const receiverSocketId = users[String(data.to)];
-
-    if (receiverSocketId) {
-        receiverSocketId.forEach((id) => {
-            io.to(id).emit("typing", {
-                senderId: userId,
-            });
-        });
-    }
-  });
-
-  // Handle disconnect
-  socket.on("disconnect", () => {
-    if (users[socket.userId]) {
-        users[socket.userId] = users[socket.userId].filter(
-            (id) => id !== socket.id
-        );
-
-        if (users[socket.userId].length === 0) {
-            delete users[socket.userId];
-        }
-    }
-
-    console.log("User disconnected:", socket.userId);
-
-    // Broadcast updated user list
-    io.emit("online_users", Object.keys(users));
-  });
-});
+setupSocket(io);
 
 // Start server
 const PORT = process.env.PORT || 5000;
