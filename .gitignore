@@ -1,0 +1,17 @@
+# Dependencies
+node_modules
+
+# Env files
+.env
+backend/.env
+
+# Next.js
+.next/
+frontend/.next/
+
+# Build
+dist/
+build/
+
+# Misc
+.DS_Store
