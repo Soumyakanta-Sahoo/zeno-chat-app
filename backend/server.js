@@ -13,6 +13,8 @@ const bcrypt = require("bcryptjs");
 let users = {};
 
 const { connectDB } = require("./config/db");
+const userRoutes = require("./routes/userRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 
 // Initialize app
 const app = express();
@@ -35,21 +37,18 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
+
+// User routes
+app.use(userRoutes);
+
+// ✅ Get messages between two users
+app.use(messageRoutes);
+
 // Test route
 app.get("/", (req, res) => {
   res.send("Zeno backend is running");
 });
 
-
-// User routes
-app.get("/users", async (req, res) => {
-  try {
-    const users = await User.find({}, "_id name");
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch users" });
-  }
-});
 
 
 // Auth routes 
@@ -109,29 +108,6 @@ app.post("/login", async (req, res) => {
     }
 });
 
-// ✅ Get messages between two users
-app.get("/messages/:user1/:user2", async (req, res) => {
-  const { user1, user2 } = req.params;
-
-  // Basic validation
-  if (!user1 || !user2) {
-    return res.status(400).json({ error: "Invalid users" });
-  }
-
-  try {
-    const messages = await Message.find({
-      $or: [
-        { senderId: user1, receiverId: user2 },
-        { senderId: user2, receiverId: user1 },
-      ],
-    }).sort({ timestamp: 1 });
-
-    res.json(messages);
-  } catch (err) {
-    console.error("Fetch error:", err);
-    res.status(500).json({ error: "Failed to fetch messages" });
-  }
-});
 
 // Socket connection
 io.on("connection", (socket) => {
