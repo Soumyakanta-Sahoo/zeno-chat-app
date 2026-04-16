@@ -1,6 +1,6 @@
 const Message = require("../models/Message");
 
-let users = {};
+const users = {};
 
 const setupSocket = (io) => {
   io.on("connection", (socket) => {
@@ -18,12 +18,13 @@ const setupSocket = (io) => {
     users[userId].push(socket.id);
 
     console.log("User connected:", userId);
+    console.log("Current users map:", users);
 
     // Broadcast online users
-    io.emit("onlineUsers", Object.keys(users));
+    io.emit("online_users", Object.keys(users));
 
     // SEND MESSAGE
-    socket.on("sendMessage", async (data) => {
+    socket.on("send_message", async (data) => {
         if (!data.to || data.to === socket.userId) {
             console.log("Invalid recipient:", data.to);
             return;
@@ -33,7 +34,7 @@ const setupSocket = (io) => {
             text: data.text,
             senderId: userId,
             receiverId: data.to,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date(),
             seen: false,
         };
 
@@ -54,13 +55,13 @@ const setupSocket = (io) => {
 
         if (receiverSockets) {
             receiverSockets.forEach((id) => {
-                io.to(id).emit("receiveMessage", messageData);
+                io.to(id).emit("receive_message", messageData);
             });
         }
     });
 
     // MESSAGE SEEN
-    socket.on("mark_seen", async (data) => {
+    socket.on("mark_as_seen", async (data) => {
         const { senderId, receiverId } = data;
 
         try {
@@ -110,15 +111,15 @@ const setupSocket = (io) => {
                 (id) => id !== socket.id
             );
 
-            if (!users[userId] || users[userId].length === 0) {
-                delete users[userId];
+            if (!users[socket.userId] || users[socket.userId].length === 0) {
+                delete users[socket.userId];
             }
         }
         console.log("User disconnected:", socket.userId);
 
-        io.emit("onlineUsers", Object.keys(users));
+        io.emit("online_users", Object.keys(users));
     });
   });
 };
 
-module.exports = { setupSocket };
+module.exports = { setupSocket, users };

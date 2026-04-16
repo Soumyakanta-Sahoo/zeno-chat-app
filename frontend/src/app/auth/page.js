@@ -8,6 +8,7 @@ export default function AuthPage() {
 
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false); // ✅ FIX 2
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -19,6 +20,7 @@ export default function AuthPage() {
     if (loading) return;
 
     setLoading(true);
+    setError(""); // ✅ FIX 5
 
     try {
       const url = isLogin ? "login" : "signup";
@@ -35,7 +37,8 @@ export default function AuthPage() {
 
       // ✅ FIX 3: proper error handling
       if (!res.ok) {
-        throw new Error(data.error || "Something went wrong");
+        setError(data.error || "Something went wrong");
+        return;
       }
 
       if (data._id) {
@@ -55,6 +58,10 @@ export default function AuthPage() {
       <h1 className="text-2xl font-bold">
         {isLogin ? "Login" : "Signup"}
       </h1>
+
+      {error && (
+        <p className="text-red-500 text-sm mb-2">{error}</p>
+      )}
 
       {!isLogin && (
         <input
@@ -82,6 +89,7 @@ export default function AuthPage() {
           setForm({ ...form, password: e.target.value })
         }
       />
+
 
       <button
         onClick={handleSubmit}

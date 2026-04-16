@@ -14,8 +14,8 @@ const messageSchema = new mongoose.Schema({
     required: true,
   },
   timestamp: {
-    type: String,
-    required: true,
+    type: Date,
+    default: Date.now,
   },
 
   seen: {
@@ -23,5 +23,7 @@ const messageSchema = new mongoose.Schema({
     default: false,
   },
 });
+
+messageSchema.index({ senderId: 1, receiverId: 1, timestamp: 1 });
 
 module.exports = mongoose.model("Message", messageSchema);

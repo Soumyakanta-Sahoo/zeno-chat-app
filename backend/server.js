@@ -10,12 +10,13 @@ require("dotenv").config();
 const User = require("./models/User");
 const bcrypt = require("bcryptjs");
 
-let users = {};
+
 
 const { connectDB } = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const messageRoutes = require("./routes/messageRoutes");
-const { setupSocket } = require("./socket/socketHandler");
+const { setupSocket,users } = require("./socket/socketHandler");
+const connectionRoutes = require("./routes/connectionRoutes");
 
 // Initialize app
 const app = express();
@@ -37,6 +38,7 @@ const io = new Server(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(connectionRoutes);
 
 
 // User routes
@@ -112,6 +114,8 @@ app.post("/login", async (req, res) => {
 
 // Socket connection
 setupSocket(io);
+app.set("io", io);
+app.set("users", users);
 
 // Start server
 const PORT = process.env.PORT || 5000;
