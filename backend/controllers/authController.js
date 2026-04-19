@@ -12,7 +12,7 @@ const signup = async (req, res) => {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 8);
 
     const user = await User.create({
       name,
