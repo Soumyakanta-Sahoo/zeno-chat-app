@@ -30,15 +30,16 @@ const setupSocket = (io) => {
             return;
         }
 
+        const receiverSockets = users[String(data.to)];
+
         const messageData = {
             text: data.text,
             senderId: userId,
             receiverId: data.to,
             timestamp: new Date(),
             seen: false,
+            delivered: !!receiverSockets,
         };
-
-        console.log("Message received:", messageData);
 
         try {
             await Message.create(messageData);
@@ -46,16 +47,22 @@ const setupSocket = (io) => {
             console.error("DB Save Error:", err);
         }
 
-        console.log("Users map:", users);
-        console.log("Sending to:", String(data.to));
-
-        const receiverSockets = users[String(data.to)];
-
-        console.log("Receiver sockets:", receiverSockets);
-
+        // Send to receiver
         if (receiverSockets) {
             receiverSockets.forEach((id) => {
                 io.to(id).emit("receive_message", messageData);
+            });
+        }
+
+        // Notify sender delivery status
+        const senderSockets = users[String(userId)];
+
+        if (senderSockets && receiverSockets) {
+            senderSockets.forEach((id) => {
+                io.to(id).emit("message_delivered", {
+                    receiverId: data.to,
+                    timestamp: messageData.timestamp,
+                });
             });
         }
     });

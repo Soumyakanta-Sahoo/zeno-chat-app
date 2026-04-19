@@ -8,6 +8,8 @@ import { io } from "socket.io-client";
 // refactor
 
 import MessageInput from "../components/chat/MessageInput";
+import MessageList from "../components/chat/MessageList";
+import ChatHeader from "../components/chat/ChatHeader";
 
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -918,44 +920,13 @@ export default function Home() {
         <div className="w-full md:w-3/4 flex flex-col bg-slate-950 relative overflow-hidden">
 
           {/* HEADER */}
-          <div className="absolute top-4 left-4 right-4 p-4 bg-slate-800/80 backdrop-blur-md border border-slate-700/50 rounded-2xl flex items-center gap-3 shadow-lg z-20">
-          {/* Back Button (Mobile only) */}
-          <button
-            onClick={() => setShowSidebar(true)}
-            className="md:hidden text-white text-lg mr-2"
-          >
-            ←
-          </button>
-
-            <div className="relative">
-
-              {/* Avatar circle */}
-              <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center rounded-full font-bold shadow-inner ring-2 ring-slate-800">
-                {userMap[selectedUser]?.[0] || "?"}
-              </div>
-
-              {users.includes(selectedUser) && (
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
-              )}
-            </div>
-
-            {/* Name + typing + Logout */}
-            <div className="flex justify-between items-center w-full">
-
-              {/* LEFT: Chat user info */}
-              <div>
-                <h2 className="font-semibold">
-                  {userMap[selectedUser] || "Select a user"}
-                </h2>
-
-                {typingUser === selectedUser && (
-                  <p className="text-xs text-gray-500">Typing...</p>
-                )}
-              </div>
-
-            </div>
-
-          </div>
+          <ChatHeader
+            selectedUser={selectedUser}
+            userMap={userMap}
+            users={users}
+            typingUser={typingUser}
+            setShowSidebar={setShowSidebar}
+          />
 
           {!selectedUser && (
             <div className="flex-1 flex items-center justify-center text-gray-400">
@@ -964,52 +935,12 @@ export default function Home() {
           )}
 
           {/* MESSAGES */}
-          <div className="flex-1 overflow-y-auto no-scrollbar p-6 pt-32 pb-4 space-y-4 bg-linear-to-b from-slate-950 via-gray-900 to-slate-800">
-            {(messages[selectedUser] || []).map((msg, index) => {
-              const isMe = msg.senderId === socketId;
-
-              return (
-                <div 
-                  key={msg.timestamp + msg.senderId}
-                  className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`px-4 py-2 rounded-2xl max-w-[70%] text-[15px] shadow-sm transition-all hover:shadow-md ${
-                      isMe
-                        ? "bg-blue-600 text-white rounded-tr-none self-end"
-                        : "bg-slate-100 text-slate-800 rounded-tl-none self-start border border-slate-700/50"
-                    }`}
-                  >
-                    <div className="leading-relaxed">{msg.text}</div>
-
-                    <div className="text-xs opacity-70 mt-1">
-                      {new Date(msg.timestamp).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-
-                      {isMe && (
-                        <span
-                          className={`text-[10px] ml-1 ${
-                            msg.seen
-                              ? "text-white-500"
-                              : msg.delivered
-                              ? "text-gray-500"
-                              : "text-gray-300"
-                          }`}
-                        >
-                          {msg.seen ? "✓✓" : "✓"}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Scroll anchor */}
-            <div ref={messageEndRef} />
-          </div>
+          <MessageList
+            messages={messages}
+            selectedUser={selectedUser}
+            socketId={socketId}
+            messageEndRef={messageEndRef}
+          />
 
           {/* Typing indicator */}
           {typingUser === selectedUser && (
