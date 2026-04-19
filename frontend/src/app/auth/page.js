@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
-  const router = useRouter(); // ✅ FIX 1
+  const router = useRouter();
+
+  const API = process.env.NEXT_PUBLIC_API_URL;
 
   const [isLogin, setIsLogin] = useState(true);
-  const [loading, setLoading] = useState(false); // ✅ FIX 2
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -16,100 +19,167 @@ export default function AuthPage() {
     password: "",
   });
 
+  useEffect(() => {
+    if (!API) return;
+
+    fetch(`${API}/`).catch(() => {});
+  }, [API]);
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const handleSubmit = async () => {
     if (loading) return;
 
+    if (!form.email || !form.password) {
+      setError("Email and password are required");
+      return;
+    }
+
+    if (!isLogin && !form.name.trim()) {
+      setError("Name is required");
+      return;
+    }
+
+    if (!API) {
+      setError("API URL missing");
+      return;
+    }
+
     setLoading(true);
-    setError(""); // ✅ FIX 5
+    setError("");
+
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 10000);
 
     try {
-      const url = isLogin ? "login" : "signup";
+      const endpoint = isLogin ? "login" : "signup";
 
-      const res = await fetch(`https://zeno-chat-app.onrender.com/${url}`, {
+      const res = await fetch(`${API}/${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim().toLowerCase(),
+          password: form.password,
+        }),
+        signal: controller.signal,
       });
 
       const data = await res.json();
 
-      // ✅ FIX 3: proper error handling
       if (!res.ok) {
         setError(data.error || "Something went wrong");
         return;
       }
 
-      if (data._id) {
-        localStorage.setItem("user", JSON.stringify(data));
-        router.push("/"); // ✅ FIX 4
-      }
+      localStorage.setItem("user", JSON.stringify(data));
+      router.push("/");
     } catch (err) {
-      console.error("Auth error:", err);
-      alert(err.message);
+      if (err.name === "AbortError") {
+        setError("Server taking too long. Try again.");
+      } else {
+        setError("Unable to connect.");
+      }
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-3">
-      <h1 className="text-2xl font-bold">
+    <div className="flex flex-col items-center justify-center min-h-screen gap-3 px-4">
+      <h1 className="text-3xl font-bold">
         {isLogin ? "Login" : "Signup"}
       </h1>
 
       {error && (
-        <p className="text-red-500 text-sm mb-2">{error}</p>
+        <p className="text-red-500 text-sm text-center">
+          {error}
+        </p>
       )}
 
       {!isLogin && (
         <input
+          type="text"
           placeholder="Name"
-          className="border p-2"
+          value={form.name}
+          className="border p-2 rounded w-full max-w-sm"
           onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
+            handleChange("name", e.target.value)
           }
         />
       )}
 
       <input
+        type="email"
         placeholder="Email"
-        className="border p-2"
+        value={form.email}
+        className="border p-2 rounded w-full max-w-sm"
         onChange={(e) =>
-          setForm({ ...form, email: e.target.value })
+          handleChange("email", e.target.value)
         }
       />
 
-      <input
-        type="password"
-        placeholder="Password"
-        className="border p-2"
-        onChange={(e) =>
-          setForm({ ...form, password: e.target.value })
-        }
-      />
+      <div className="relative w-full max-w-sm">
+        <input
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          value={form.password}
+          className="border p-2 rounded w-full pr-16"
+          onChange={(e) =>
+            handleChange("password", e.target.value)
+          }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSubmit();
+          }}
+        />
 
+        <button
+          type="button"
+          onClick={() =>
+            setShowPassword(!showPassword)
+          }
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-500"
+        >
+          {showPassword ? "Hide" : "Show"}
+        </button>
+      </div>
 
       <button
         onClick={handleSubmit}
         disabled={loading}
-        className={`px-4 py-2 text-white rounded ${
+        className={`px-4 py-2 rounded text-white w-full max-w-sm ${
           loading
             ? "bg-gray-400 cursor-not-allowed"
             : "bg-blue-500 hover:bg-blue-600"
         }`}
       >
         {loading
-          ? "Please wait..."
+          ? isLogin
+            ? "Logging in..."
+            : "Creating account..."
           : isLogin
           ? "Login"
           : "Signup"}
       </button>
 
       <p
-        className="cursor-pointer text-blue-500"
-        onClick={() => setIsLogin(!isLogin)}
+        className="cursor-pointer text-blue-500 text-sm"
+        onClick={() => {
+          setError("");
+          setShowPassword(false);
+          setIsLogin(!isLogin);
+        }}
       >
         {isLogin
           ? "Create account"

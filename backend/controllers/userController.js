@@ -1,11 +1,9 @@
 const User = require("../models/User");
 
-// 🔹 Get all users (used for userMap / name mapping)
+// Get all users
 const getUsers = async (req, res) => {
   try {
     const users = await User.find().select("_id name email");
-
-    // Always return array
     res.json(users);
   } catch (err) {
     console.error("User fetch error:", err);
@@ -13,26 +11,35 @@ const getUsers = async (req, res) => {
   }
 };
 
-// 🔹 Find user by email (for search feature)
+// Search user
 const findUserByEmail = async (req, res) => {
   try {
-    // ✅ Extract BOTH email and id from query parameters
     const { email, id } = req.query;
 
     let user;
 
     if (email) {
-      user = await User.findOne({ email }, "_id name email");
+      const cleanEmail = email.trim().toLowerCase();
+
+      user = await User.findOne(
+        { email: cleanEmail },
+        "_id name email"
+      );
     } else if (id) {
-      // ✅ Now 'id' is defined and won't throw a ReferenceError
-      user = await User.findById(id, "_id name email");
+      user = await User.findById(
+        id,
+        "_id name email"
+      );
     } else {
-      // ✅ Check if NEITHER was provided
-      return res.status(400).json({ error: "Email or User ID is required" });
+      return res.status(400).json({
+        error: "Email or User ID is required",
+      });
     }
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({
+        error: "User not found",
+      });
     }
 
     res.json(user);
@@ -42,4 +49,7 @@ const findUserByEmail = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, findUserByEmail };
+module.exports = {
+  getUsers,
+  findUserByEmail,
+};
