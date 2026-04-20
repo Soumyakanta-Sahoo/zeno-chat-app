@@ -12,6 +12,7 @@ import MessageList from "../components/chat/MessageList";
 import ChatHeader from "../components/chat/ChatHeader";
 import ProfileMenu from "../components/sidebar/ProfileMenu";
 import SearchPopup from "../components/sidebar/SearchPopup";
+import PendingRequests from "../components/sidebar/PendingRequests";
 
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -136,6 +137,25 @@ export default function Home() {
 
         const data = await res.json();
         setPendingRequests(data);
+
+        for (const req of data) {
+          if (!userMap[req.senderId]) {
+            try {
+              const resUser = await fetch(
+                `${BASE_URL}/users/search?id=${req.senderId}`
+              );
+
+              if (!resUser.ok) continue;
+
+              const user = await resUser.json();
+
+              setUserMap((prev) => ({
+                ...prev,
+                [user._id]: user.name,
+              }));
+            } catch {}
+          }
+        }
       } catch (err) {
         console.error("Pending fetch error:", err);
       }
@@ -278,8 +298,28 @@ export default function Home() {
       }, 2000);
     });
 
-    socketRef.current.on("new_connection_request", (data) => {
+    socketRef.current.on("new_connection_request", async (data) => {
       setPendingRequests((prev) => [...prev, data]);
+
+      // If sender name missing in map, fetch once
+      if (!userMap[data.senderId]) {
+        try {
+          const res = await fetch(
+            `${BASE_URL}/users/search?id=${data.senderId}`
+          );
+
+          if (!res.ok) return;
+
+          const user = await res.json();
+
+          setUserMap((prev) => ({
+            ...prev,
+            [user._id]: user.name,
+          }));
+        } catch (err) {
+          console.error("Failed to fetch sender name:", err);
+        }
+      }
     });
 
     socketRef.current.on("connection_status_updated", ({ connection, status }) => {
@@ -665,43 +705,11 @@ export default function Home() {
 
 
           {/* Pending Requests */}
-          {pendingRequests.length > 0 && (
-            <div className="mb-4">
-
-              <h3 className="text-sm font-semibold mb-2">Requests</h3>
-
-              {pendingRequests.map((req) => (
-                <div key={req._id} className="bg-slate-800 p-2 rounded mb-2">
-
-                  <p className="text-sm">
-                    {userMap[req.senderId] || "User"}
-                  </p>
-
-                  {req.note && (
-                    <p className="text-xs text-gray-400">{req.note}</p>
-                  )}
-
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => handleConnectionAction(req._id, "accepted")}
-                      className="flex-1 bg-green-600 text-white p-1 rounded text-xs"
-                    >
-                      Accept
-                    </button>
-
-                    <button
-                      onClick={() => handleConnectionAction(req._id, "rejected")}
-                      className="flex-1 bg-red-600 text-white p-1 rounded text-xs"
-                    >
-                      Reject
-                    </button>
-                  </div>
-
-                </div>
-              ))}
-
-            </div>
-          )}
+          <PendingRequests
+            pendingRequests={pendingRequests}
+            userMap={userMap}
+            handleConnectionAction={handleConnectionAction}
+          />
 
           {connections
             .sort((a, b) => {
