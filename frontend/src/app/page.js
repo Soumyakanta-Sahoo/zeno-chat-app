@@ -11,6 +11,7 @@ import MessageInput from "../components/chat/MessageInput";
 import MessageList from "../components/chat/MessageList";
 import ChatHeader from "../components/chat/ChatHeader";
 import ProfileMenu from "../components/sidebar/ProfileMenu";
+import SearchPopup from "../components/sidebar/SearchPopup";
 
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -634,55 +635,17 @@ export default function Home() {
               {/* show search */}
             
               {showSearch && (
-                <div 
-                  ref={searchRef}
-                  className="absolute top-12 right-12 w-64 bg-slate-800 p-3 rounded-lg shadow-lg z-50"
-                  >
-
-                  <input
-                    type="text"
-                    placeholder="Search by email..."
-                    value={searchEmail}
-                    onChange={(e) => setSearchEmail(e.target.value)}
-                    className="w-full p-2 rounded bg-slate-700 text-white mb-2"
-                  />
-
-                  <button
-                    onClick={handleSearch}
-                    className="w-full bg-blue-600 text-white p-2 rounded"
-                  >
-                    Search
-                  </button>
-
-                  {/* 👉 UI Error Message */}
-                  {searchError && (
-                    <p className="text-red-400 text-sm mt-2 text-center">{searchError}</p>
-                  )}
-
-                  {searchResult && (
-                    <div className="mt-3 p-2 bg-slate-700 rounded">
-
-                      <p>{searchResult.name}</p>
-                      <p className="text-xs text-gray-400">{searchResult.email}</p>
-
-                      <textarea
-                        placeholder="Add note..."
-                        value={requestNote}
-                        onChange={(e) => setRequestNote(e.target.value)}
-                        className="w-full mt-2 p-1 rounded bg-slate-600 text-white"
-                      />
-
-                      <button
-                        onClick={handleSendRequest}
-                        className="mt-2 w-full bg-green-600 text-white p-1 rounded"
-                      >
-                        Send Request
-                      </button>
-
-                    </div>
-                  )}
-
-                </div>
+                <SearchPopup
+                  searchRef={searchRef}
+                  searchEmail={searchEmail}
+                  setSearchEmail={setSearchEmail}
+                  handleSearch={handleSearch}
+                  searchError={searchError}
+                  searchResult={searchResult}
+                  requestNote={requestNote}
+                  setRequestNote={setRequestNote}
+                  handleSendRequest={handleSendRequest}
+                />
               )}
 
 
