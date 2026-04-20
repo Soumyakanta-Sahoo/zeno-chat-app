@@ -13,6 +13,7 @@ import ChatHeader from "../components/chat/ChatHeader";
 import ProfileMenu from "../components/sidebar/ProfileMenu";
 import SearchPopup from "../components/sidebar/SearchPopup";
 import PendingRequests from "../components/sidebar/PendingRequests";
+import ConnectionsList from "../components/sidebar/ConnectionsList";
 
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -653,7 +654,7 @@ export default function Home() {
 
       {/* SIDEBAR */}
       {showSidebar && (
-        <div className="w-full md:w-1/4 bg-slate-900 text-gray-300 p-4 border-r border-slate-700 shadow-xl">
+        <div className="w-full md:w-1/4 bg-slate-900 text-gray-300 p-4 border-r border-slate-700 shadow-xl overflow-y-auto no-scrollbar">
           <div className="flex items-center justify-between w-full mb-4 relative">
 
             <h2 className="font-bold">Users</h2>
@@ -711,92 +712,20 @@ export default function Home() {
             handleConnectionAction={handleConnectionAction}
           />
 
-          {connections
-            .sort((a, b) => {
-              const lastA = messages[a]?.[messages[a].length - 1]?.timestamp || 0;
-              const lastB = messages[b]?.[messages[b].length - 1]?.timestamp || 0;
-
-              return new Date(lastB) - new Date(lastA);
-            })
-            .map((user) => {
-              const lastMsg = messages[user]?.[messages[user].length - 1];
-            
-              return (
-                <div
-                  key={user}
-                  onClick={() => {
-                    if (user === socketId) return;
-
-                    setSelectedUser(user);
-                    setMessage("");
-
-                    // Clear unread count
-                    setUnread((prev) => ({
-                      ...prev,
-                      [user]: 0,
-                    }));
-                    
-                    if (window.innerWidth < 768) {
-                      setShowSidebar(false);
-                    }
-                  }}
-                  className={`p-4 rounded-xl cursor-pointer mb-3 transition-all duration-200 border ${
-                    selectedUser === user
-                      ? "bg-blue-600 border-blue-400 shadow-lg translate-x-1" // Selected: Bright & shifted
-                      : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/70 hover:border-slate-600" // Not Selected: Subtle box
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-
-                    {/* LEFT: Name + Message */}
-                    <div className="flex flex-col">
-                      {/* Name */}
-                      <div className="flex items-center gap-2">
-                        <div className="relative">
-                          <div className="w-8 h-8 bg-blue-500 text-white flex items-center justify-center rounded-full text-sm">
-                            {userMap[user]?.[0] || "?"}
-                          </div>
-
-                          {/* 🟢 Online */}
-                          {users.includes(user) && (
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border border-white rounded-full"></span>
-                          )}
-                        </div>
-
-                        <span className="font-medium">
-                          {userMap[user] ?? "Loading..."}
-                        </span>
-                      </div>
-                      
-                      {/* Last message OR Typing*/}
-                      <span className="text-xs text-gray-500 truncate max-w-35">
-                        {typingUser === user
-                          ? "Typing..."
-                          : lastMsg
-                          ? lastMsg.text
-                          : "No messages yet"}
-                      </span>
-                    </div>
-
-                    {/* RIGHT: Timestamp */}
-                    {lastMsg && (
-                      <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">
-                        {new Date(lastMsg.timestamp).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    )}
-
-                    {/* Unread Badge */}
-                    {unread[user] > 0 && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full min-w-5 text-center ml-2">
-                        {unread[user]}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )})}
+          <ConnectionsList
+            connections={connections}
+            messages={messages}
+            selectedUser={selectedUser}
+            setSelectedUser={setSelectedUser}
+            setMessage={setMessage}
+            unread={unread}
+            setUnread={setUnread}
+            users={users}
+            userMap={userMap}
+            typingUser={typingUser}
+            socketId={socketId}
+            setShowSidebar={setShowSidebar}
+          />
         </div>
       )}
 
