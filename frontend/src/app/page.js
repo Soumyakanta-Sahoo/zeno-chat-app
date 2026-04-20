@@ -10,6 +10,7 @@ import { io } from "socket.io-client";
 import MessageInput from "../components/chat/MessageInput";
 import MessageList from "../components/chat/MessageList";
 import ChatHeader from "../components/chat/ChatHeader";
+import ProfileMenu from "../components/sidebar/ProfileMenu";
 
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -686,106 +687,19 @@ export default function Home() {
 
 
               {/* Avatar/Profile */}
-              <div className="relative">
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowProfileMenu((prev) => !prev);
-                  }}
-                  className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white cursor-pointer"
-                >
-                  {currentUser?.name?.[0] || "?"}
-                </div>
-
-
-                {/* Profile Popover */}
-                { showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-slate-800 text-white rounded-lg shadow-lg p-3 z-50">
-                    
-                    {/* Triangle pointer */}
-                    <div className="absolute -top-2 right-3 w-3 h-3 bg-slate-800 rotate-45"></div>
-
-                    {/* User Info */}
-                    {currentUser ? (
-                      <>
-                      <p className="text-sm font-semibold">{currentUser.name}</p>
-                      <p className="text-xs text-gray-400 mb-2">
-                        {currentUser.email}
-                        </p>
-
-                        <button
-                          onClick={() => {
-                            socketRef.current?.disconnect();
-                            localStorage.removeItem("user");
-                            setSelectedUser(null);
-                            setCurrentUser(null);
-                            setShowProfileMenu(false);
-                            router.replace("/auth");
-                          }}
-                          className="w-full bg-red-500 hover:bg-red-600 text-white py-1 rounded text-sm"
-                        >
-                          Logout
-                        </button>
-                      </>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
-                            router.push("/auth");
-                          }}
-                          className="w-full bg-blue-500 hover:bg-green-500 text-white py-1 rounded text-sm"
-                        >
-                          Login
-                        </button>
-                    )}
-
-                  </div>
-                )}
-              </div>  
+              <ProfileMenu
+                currentUser={currentUser}
+                showProfileMenu={showProfileMenu}
+                setShowProfileMenu={setShowProfileMenu}
+                socketRef={socketRef}
+                setSelectedUser={setSelectedUser}
+                setCurrentUser={setCurrentUser}
+                router={router}
+              />  
             </div>
           </div>
 
 
-          {/* <div className="mb-4 space-y-2">
-
-            <input
-              type="text"
-              placeholder="Search by email..."
-              value={searchEmail}
-              onChange={(e) => setSearchEmail(e.target.value)}
-              className="w-full p-2 rounded bg-slate-800 text-white"
-            />
-
-            <button
-              onClick={handleSearch}
-              className="w-full bg-blue-600 text-white p-2 rounded"
-            >
-              Search
-            </button>
-
-          </div> */}
-
-          {/* {searchResult && (
-            <div className="mb-4 p-3 bg-slate-800 rounded">
-
-              <p className="font-medium">{searchResult.name}</p>
-              <p className="text-xs text-gray-400">{searchResult.email}</p>
-
-              <textarea
-                placeholder="Add a note..."
-                value={requestNote}
-                onChange={(e) => setRequestNote(e.target.value)}
-                className="w-full mt-2 p-2 rounded bg-slate-700 text-white"
-              />
-
-              <button
-                onClick={handleSendRequest}
-                className="mt-2 w-full bg-green-600 text-white p-2 rounded"
-              >
-                Send Request
-              </button>
-            </div>
-          )} */}
 
           {/* Pending Requests */}
           {pendingRequests.length > 0 && (
