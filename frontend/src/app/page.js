@@ -14,6 +14,7 @@ import ProfileMenu from "../components/sidebar/ProfileMenu";
 import SearchPopup from "../components/sidebar/SearchPopup";
 import PendingRequests from "../components/sidebar/PendingRequests";
 import ConnectionsList from "../components/sidebar/ConnectionsList";
+import SidebarHeader from "../components/sidebar/SidebarHeader";
 
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -40,6 +41,7 @@ export default function Home() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
+  const [showRequests, setShowRequests] = useState(false);
 
   const router = useRouter();
   const socketRef = useRef(null);
@@ -655,61 +657,34 @@ export default function Home() {
       {/* SIDEBAR */}
       {showSidebar && (
         <div className="w-full md:w-1/4 bg-slate-900 text-gray-300 p-4 border-r border-slate-700 shadow-xl overflow-y-auto no-scrollbar">
-          <div className="flex items-center justify-between w-full mb-4 relative">
+          <SidebarHeader
+            showSearch={showSearch}
+            setShowSearch={setShowSearch}
+            showRequests={showRequests}
+            setShowRequests={setShowRequests}
+            searchRef={searchRef}
 
-            <h2 className="font-bold">Users</h2>
+            searchEmail={searchEmail}
+            setSearchEmail={setSearchEmail}
+            handleSearch={handleSearch}
+            searchError={searchError}
+            searchResult={searchResult}
 
-            <div className="flex items-center gap-2">
+            requestNote={requestNote}
+            setRequestNote={setRequestNote}
+            handleSendRequest={handleSendRequest}
 
-              {/* Search Icon */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowSearch((prev) => !prev);
-                }}
-                className="text-white bg-slate-700 p-2 rounded-lg hover:bg-slate-600"
-              >
-                🔍
-              </button>
-
-
-              {/* show search */}
-            
-              {showSearch && (
-                <SearchPopup
-                  searchRef={searchRef}
-                  searchEmail={searchEmail}
-                  setSearchEmail={setSearchEmail}
-                  handleSearch={handleSearch}
-                  searchError={searchError}
-                  searchResult={searchResult}
-                  requestNote={requestNote}
-                  setRequestNote={setRequestNote}
-                  handleSendRequest={handleSendRequest}
-                />
-              )}
-
-
-              {/* Avatar/Profile */}
-              <ProfileMenu
-                currentUser={currentUser}
-                showProfileMenu={showProfileMenu}
-                setShowProfileMenu={setShowProfileMenu}
-                socketRef={socketRef}
-                setSelectedUser={setSelectedUser}
-                setCurrentUser={setCurrentUser}
-                router={router}
-              />  
-            </div>
-          </div>
-
-
-
-          {/* Pending Requests */}
-          <PendingRequests
             pendingRequests={pendingRequests}
             userMap={userMap}
             handleConnectionAction={handleConnectionAction}
+
+            currentUser={currentUser}
+            showProfileMenu={showProfileMenu}
+            setShowProfileMenu={setShowProfileMenu}
+            socketRef={socketRef}
+            setSelectedUser={setSelectedUser}
+            setCurrentUser={setCurrentUser}
+            router={router}
           />
 
           <ConnectionsList
