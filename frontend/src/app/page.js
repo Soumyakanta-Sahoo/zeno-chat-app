@@ -41,8 +41,8 @@ export default function Home() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
-  const [showRequests, setShowRequests] = useState(false);
-
+  const [sidebarView, setSidebarView] = useState("chats");
+  
   const router = useRouter();
   const socketRef = useRef(null);
   const socketIdRef = useRef("");
@@ -652,16 +652,16 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-100">
+    <div className="flex flex-col md:flex-row min-h-dvh bg-slate-950">
 
       {/* SIDEBAR */}
       {showSidebar && (
-        <div className="w-full md:w-1/4 bg-slate-900 text-gray-300 p-4 border-r border-slate-700 shadow-xl overflow-y-auto no-scrollbar">
+        <div className="w-full md:w-1/4 min-h-dvh bg-slate-900 text-gray-300 p-4 border-r border-slate-700 shadow-xl overflow-y-auto no-scrollbar">
           <SidebarHeader
             showSearch={showSearch}
             setShowSearch={setShowSearch}
-            showRequests={showRequests}
-            setShowRequests={setShowRequests}
+            sidebarView={sidebarView}
+            setSidebarView={setSidebarView}
             searchRef={searchRef}
 
             searchEmail={searchEmail}
@@ -687,26 +687,44 @@ export default function Home() {
             router={router}
           />
 
-          <ConnectionsList
-            connections={connections}
-            messages={messages}
-            selectedUser={selectedUser}
-            setSelectedUser={setSelectedUser}
-            setMessage={setMessage}
-            unread={unread}
-            setUnread={setUnread}
-            users={users}
-            userMap={userMap}
-            typingUser={typingUser}
-            socketId={socketId}
-            setShowSidebar={setShowSidebar}
-          />
+          {/* side chat connection */}
+          {sidebarView === "chats" ? (
+            <ConnectionsList
+              connections={connections}
+              messages={messages}
+              selectedUser={selectedUser}
+              setSelectedUser={setSelectedUser}
+              setMessage={setMessage}
+              unread={unread}
+              setUnread={setUnread}
+              users={users}
+              userMap={userMap}
+              typingUser={typingUser}
+              socketId={socketId}
+              setShowSidebar={setShowSidebar}
+            />
+          ) : (
+            <div>
+              <button
+                onClick={() => setSidebarView("chats")}
+                className="mb-3 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white"
+              >
+                ← Back
+              </button>
+
+              <PendingRequests
+                pendingRequests={pendingRequests}
+                userMap={userMap}
+                handleConnectionAction={handleConnectionAction}
+              />
+            </div>
+          )}
         </div>
       )}
 
       {/* CHAT AREA */}
       {(!showSidebar || !isMobile) && (
-        <div className="w-full md:w-3/4 flex flex-col bg-slate-950 relative overflow-hidden">
+        <div className="w-full md:w-3/4 min-h-dvh flex flex-col bg-slate-950 relative overflow-hidden">
 
           {/* HEADER */}
           <ChatHeader

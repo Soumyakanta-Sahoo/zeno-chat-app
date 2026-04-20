@@ -5,8 +5,8 @@ import PendingRequests from "./PendingRequests";
 export default function SidebarHeader({
   showSearch,
   setShowSearch,
-  showRequests,
-  setShowRequests,
+  sidebarView,
+  setSidebarView,
   searchRef,
 
   searchEmail,
@@ -47,7 +47,7 @@ export default function SidebarHeader({
           onClick={(e) => {
             e.stopPropagation();
             setShowSearch((prev) => !prev);
-            setShowRequests(false);
+            setSidebarView("chats");
           }}
           className="relative text-white bg-slate-700 p-2 rounded-lg hover:bg-slate-600 transition"
           title="Search"
@@ -59,7 +59,7 @@ export default function SidebarHeader({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setShowRequests((prev) => !prev);
+            setSidebarView("requests");
             setShowSearch(false);
           }}
           className="relative text-white bg-slate-700 p-2 rounded-lg hover:bg-slate-600 transition"
@@ -101,16 +101,6 @@ export default function SidebarHeader({
         />
       )}
 
-      {/* Requests Popup */}
-      {showRequests && (
-        <div className="absolute top-12 right-0 w-72 z-50">
-          <PendingRequests
-            pendingRequests={pendingRequests}
-            userMap={userMap}
-            handleConnectionAction={handleConnectionAction}
-          />
-        </div>
-      )}
     </div>
   );
 }
