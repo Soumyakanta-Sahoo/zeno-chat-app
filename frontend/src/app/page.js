@@ -17,6 +17,12 @@ import ConnectionsList from "../components/sidebar/ConnectionsList";
 import SidebarHeader from "../components/sidebar/SidebarHeader";
 
 
+// refractor - sockets
+
+import useSocketChat from "../hooks/useSocketChat";
+
+
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function Home() {
@@ -51,6 +57,27 @@ export default function Home() {
   const selectedUserRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const typingDebounceRef = useRef(null);
+
+  useSocketChat({
+    BASE_URL,
+    currentUser,
+
+    socketRef,
+    socketIdRef,
+    selectedUserRef,
+    typingTimeoutRef,
+
+    setSocketId,
+    setUsers,
+    setMessages,
+    setUnread,
+    setTypingUser,
+
+    setPendingRequests,
+    setConnections,
+    setSelectedUser,
+    setUserMap,
+  });
 
   useEffect(() => {
     const user = localStorage.getItem("user");
@@ -199,219 +226,6 @@ export default function Home() {
   }, [showSearch]);
 
 
-  useEffect(() => {
-
-    if (!currentUser?._id) return;
-
-    // Step 1: Get logged in user ID
-
-    const userId = currentUser._id;
-
-    // Step 2: Connect socket with REAL user ID (not socket.id)
-    socketRef.current = io(BASE_URL, {
-      auth: { userId},
-    });
-
-
-    // Step 3: Set Identity
-    setSocketId(userId);
-    socketIdRef.current = userId;
-
-    // Optional log
-    socketRef.current.on("connect", () => {
-      console.log("Connected as:", userId);
-    });
-
-    socketRef.current.on("disconnect", () => {
-      console.warn("Socket disconnected");
-    });
-
-    socketRef.current.on("connect_error", (err) => {
-      console.warn("Socket connection error:", err.message);
-    });
-
-    socketRef.current.on("reconnect_attempt", () => {
-      console.log("Trying to reconnect...");
-    });
-
-    socketRef.current.on("reconnect", () => {
-      console.log("Reconnected successfully");
-    });
-
-    // Receive messages
-    socketRef.current.on("receive_message", (data) => {
-      if (data.senderId === socketIdRef.current ) return;
-
-      const sender = data.senderId;
-
-      // Add Message
-      setMessages((prev) => ({
-        ...prev,
-        [sender]: [...(prev[sender] || []), data],
-      }));
-
-      // add unread count (if not active chat)
-      if (selectedUserRef.current !== sender) {
-        setUnread((prev) => ({
-          ...prev,
-          [sender]: prev[sender] ? prev[sender] + 1 : 1,
-        }));
-      }
-    });
-
-    // Receive "Seen" updates
-    socketRef.current.on("messages_seen_update", ({ seenBy }) => {
-      setMessages((prev) => {
-        const updated = { ...prev };
-
-        if (updated[seenBy]) {
-          updated[seenBy] = updated[seenBy].map((msg) => ({
-            ...msg,
-            seen: true,
-          }));
-        }
-
-        return updated;
-      });
-    });
-
-    socketRef.current.on("online_users", (userList) => {
-      setUsers(userList);
-
-      const currentUserId = socketIdRef.current;
-
-      const otherUser = currentUserId
-        ? userList.filter((user) => user !== currentUserId)
-        : [];
-
-      
-    });
-
-    socketRef.current.on("typing", (data) => {
-      if (!selectedUserRef.current || data.senderId !== selectedUserRef.current) return;
-
-      setTypingUser(data.senderId);
-
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-
-      typingTimeoutRef.current = setTimeout(() => {
-        setTypingUser(null);
-      }, 2000);
-    });
-
-    socketRef.current.on("new_connection_request", async (data) => {
-      setPendingRequests((prev) => [...prev, data]);
-
-      // If sender name missing in map, fetch once
-      if (!userMap[data.senderId]) {
-        try {
-          const res = await fetch(
-            `${BASE_URL}/users/search?id=${data.senderId}`
-          );
-
-          if (!res.ok) return;
-
-          const user = await res.json();
-
-          setUserMap((prev) => ({
-            ...prev,
-            [user._id]: user.name,
-          }));
-        } catch (err) {
-          console.error("Failed to fetch sender name:", err);
-        }
-      }
-    });
-
-    socketRef.current.on("connection_status_updated", ({ connection, status }) => {
-      console.log("🔥 Connection updated via socket:", connection);
-
-      const user = currentUser;
-      if (!user) return;
-
-      // Remove from pending
-      setPendingRequests((prev) =>
-        prev.filter((req) => req._id !== connection._id)
-      );
-
-      // if accepted -> add to connections
-      if (status === "accepted"){
-        const otherUser =
-          connection.senderId === user._id
-            ? connection.receiverId
-            : connection.senderId;
-
-        setConnections((prev) => {
-          if (prev.includes(otherUser)) return prev;
-          return [otherUser, ...prev];
-        });
-
-        // fetch user name if not present
-        if (!userMap[otherUser]){
-          fetch(`${BASE_URL}/users/search?id=${otherUser}`)
-            .then((res) => res.json())
-            .then((data) => {
-              setUserMap((prev) => ({
-                ...prev,
-                [data._id]: data.name,
-              }));
-            })
-            .catch(() => {});
-        }
-
-        setSelectedUser((prev) => prev || otherUser);
-      }
-    });
-
-    // socketRef.current.on("connection_updated", ({ connection, status }) => {
-    //   console.log("🔥 Connection updated:", connection);
-
-    //   const user = currentUser;
-    //   if (!user) return;
-
-    //   // Remmove from pending
-    //   setPendingRequests((prev) =>
-    //     prev.filter((req) => req._id !== connection._id)
-    //   );
-
-    //   // if accepted -> add to connections
-    //   if (status === "accepted"){
-    //     const otherUser =
-    //       connection.senderId === user._id
-    //         ? connection.receiverId
-    //         : connection.senderId;
-
-    //     setConnections((prev) => {
-    //       if (prev.includes(otherUser)) return prev;
-    //       return [otherUser, ...prev];
-    //     });
-
-    //     // fetch user name if not present
-    //     if (!userMap[otherUser]){
-    //       fetch(`${BASE_URL}/users/search?id=${otherUser}`)
-    //         .then((res) => res.json())
-    //         .then((data) => {
-    //           setUserMap((prev) => ({
-    //             ...prev,
-    //             [data._id]: data.name,
-    //           }));
-    //         })
-    //         .catch(() => {});
-    //     }
-
-    //     // Auto-select if nothing selected
-    //     setSelectedUser((prev) => prev || otherUser);
-    //   }
-
-    // });
-
-    return () => {
-      socketRef.current?.disconnect();
-    };
-   
-  }, [currentUser]);
 
   // Auto scroll
   useEffect(() => {
@@ -652,11 +466,11 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-dvh bg-slate-950">
+    <div className="flex flex-col md:flex-row h-dvh bg-slate-950 overflow-hidden">
 
       {/* SIDEBAR */}
       {showSidebar && (
-        <div className="w-full md:w-1/4 min-h-dvh bg-slate-900 text-gray-300 p-4 border-r border-slate-700 shadow-xl overflow-y-auto no-scrollbar">
+        <div className="w-full md:w-1/4 h-dvh bg-slate-900 text-gray-300 p-4 border-r border-slate-700 shadow-xl overflow-y-auto no-scrollbar">
           <SidebarHeader
             showSearch={showSearch}
             setShowSearch={setShowSearch}
@@ -724,7 +538,7 @@ export default function Home() {
 
       {/* CHAT AREA */}
       {(!showSidebar || !isMobile) && (
-        <div className="w-full md:w-3/4 min-h-dvh flex flex-col bg-slate-950 relative overflow-hidden">
+        <div className="w-full md:w-3/4 h-dvh min-h-0 flex flex-col bg-slate-950 relative overflow-hidden">
 
           {/* HEADER */}
           <ChatHeader
