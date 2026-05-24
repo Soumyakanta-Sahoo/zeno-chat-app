@@ -1,4 +1,4 @@
-# Zeno V2 Beta
+# Zeno V3 Beta
 
 A real-time chat application with connection-based messaging.
 
